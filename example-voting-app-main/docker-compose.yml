@@ -8,7 +8,7 @@ services:
     depends_on:
       - redis
     volumes:
-      - ./vote:/usr/local/app
+     - ./vote:/usr/local/app
     ports:
       - "8080:80"
     networks:
@@ -39,34 +39,24 @@ services:
       - back-tier
 
   redis:
-    image: redis/redis-stack:7.2.0     # stable Redis with modules
+    image: redis:alpine
     restart: always
     ports:
       - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
     networks:
       - back-tier
 
   db:
-    image: postgres:15
+    image: postgres:15-alpine
     restart: always
     environment:
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "postgres"
-      POSTGRES_DB: "votes"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: votes      # 👈 important: create votes DB
     ports:
       - "5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
     networks:
       - back-tier
 
