@@ -38,17 +38,15 @@ services:
 
   redis:
     image: redis:alpine
-    restart: always
+    restart: always           # ensures Redis restarts if stopped
     ports:
       - "6379:6379"
-    healthcheck:
-      disable: true
     networks:
       - back-tier
 
   db:
     image: postgres:15-alpine
-    restart: always
+    restart: always           # ensures DB restarts if stopped
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"
@@ -56,8 +54,6 @@ services:
       - "5432:5432"
     volumes:
       - "db-data:/var/lib/postgresql/data"
-    healthcheck:
-      disable: true
     networks:
       - back-tier
 
