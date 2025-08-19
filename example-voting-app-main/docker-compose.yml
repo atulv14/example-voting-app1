@@ -1,84 +1,58 @@
+version: "3.9"
+
 services:
-  vote:
-    build: 
-      context: ./vote
-      target: dev
-    depends_on:
-      - redis
-    volumes:
-     - ./vote:/usr/local/app
+  redis:
+    image: redis:7
+    container_name: example-voting-app-redis
     ports:
-      - "8080:80"
-    networks:
-      - front-tier
-      - back-tier
+      - "6379:6379"
+
+  db:
+    image: postgres:15
+    container_name: example-voting-app-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  vote:
+    build: ./vote
+    container_name: example-voting-app-vote
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "5000:80"
 
   result:
     build: ./result
-    entrypoint: nodemon --inspect=0.0.0.0 server.js
+    container_name: example-voting-app-result
     depends_on:
-      - db
-    volumes:
-      - ./result:/usr/local/app
+      db:
+        condition: service_healthy
     ports:
-      - "8081:80"
-      - "127.0.0.1:9229:9229"
-    networks:
-      - front-tier
-      - back-tier
+      - "5001:80"
 
   worker:
-    build:
-      context: ./worker
+    build: ./worker
+    container_name: example-voting-app-worker
     depends_on:
-      - redis
-      - db
-    networks:
-      - back-tier
-
-  redis:
-    image: redis:7-alpine
-    restart: always           # ensures Redis restarts if stopped
-    ports:
-      - "6379:6379"
-    healthcheck:              # ✅ added proper healthcheck
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - back-tier
-
-  db:
-    image: postgres:15-alpine
-    restart: always           # ensures DB restarts if stopped
-    environment:
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "postgres"
-    ports:
-      - "5432:5432"
-    volumes:
-      - "db-data:/var/lib/postgresql/data"
-    healthcheck:              # ✅ added proper healthcheck
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - back-tier
-
-  seed:
-    build: ./seed-data
-    profiles: ["seed"]
-    depends_on:
-      - vote
-    networks:
-      - front-tier
-    restart: "no"
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
 volumes:
   db-data:
-
-networks:
-  front-tier:
-  back-tier:
