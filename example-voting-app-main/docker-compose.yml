@@ -41,6 +41,8 @@ services:
     restart: always
     ports:
       - "6379:6379"
+    healthcheck:
+      disable: true
     networks:
       - back-tier
 
@@ -54,6 +56,8 @@ services:
       - "5432:5432"
     volumes:
       - "db-data:/var/lib/postgresql/data"
+    healthcheck:
+      disable: true
     networks:
       - back-tier
 
