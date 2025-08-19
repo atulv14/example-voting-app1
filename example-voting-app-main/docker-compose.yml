@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   vote:
     build: 
@@ -39,24 +37,33 @@ services:
       - back-tier
 
   redis:
-    image: redis:alpine
-    restart: always
+    image: redis:7-alpine
+    restart: always           # ensures Redis restarts if stopped
     ports:
       - "6379:6379"
+    healthcheck:              # ✅ added proper healthcheck
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - back-tier
 
   db:
     image: postgres:15-alpine
-    restart: always
+    restart: always           # ensures DB restarts if stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: votes      # 👈 important: create votes DB
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
     ports:
       - "5432:5432"
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - "db-data:/var/lib/postgresql/data"
+    healthcheck:              # ✅ added proper healthcheck
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - back-tier
 
