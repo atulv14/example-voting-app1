@@ -4,14 +4,7 @@ services:
       context: ./vote
       target: dev
     depends_on:
-      redis:
-        condition: service_healthy
-    healthcheck: 
-      test: ["CMD", "curl", "-f", "http://localhost"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+      - redis
     volumes:
      - ./vote:/usr/local/app
     ports:
@@ -24,8 +17,7 @@ services:
     build: ./result
     entrypoint: nodemon --inspect=0.0.0.0 server.js
     depends_on:
-      db:
-        condition: service_healthy 
+      - db
     volumes:
       - ./result:/usr/local/app
     ports:
@@ -39,10 +31,8 @@ services:
     build:
       context: ./worker
     depends_on:
-      redis:
-        condition: service_healthy 
-      db:
-        condition: service_healthy 
+      - redis
+      - db
     networks:
       - back-tier
 
@@ -51,12 +41,6 @@ services:
     restart: always
     ports:
       - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
     networks:
       - back-tier
 
@@ -70,12 +54,6 @@ services:
       - "5432:5432"
     volumes:
       - "db-data:/var/lib/postgresql/data"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
     networks:
       - back-tier
 
@@ -83,8 +61,7 @@ services:
     build: ./seed-data
     profiles: ["seed"]
     depends_on:
-      vote:
-        condition: service_healthy 
+      - vote
     networks:
       - front-tier
     restart: "no"
